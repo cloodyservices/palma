@@ -424,9 +424,10 @@ const menuData = {
                 { type: "checkbox", label: "RC Mode", desc: "Enable remote control mode", checked: false },
             ]},
             { label: "Triggers", tabs: [
-                { type: "button", label: "Trigger Event 1", desc: "Execute custom trigger event 1" },
-                { type: "button", label: "Trigger Event 2", desc: "Execute custom trigger event 2" },
-                { type: "button", label: "Trigger Event 3", desc: "Execute custom trigger event 3" },
+                { type: "button", label: "Set Job Police", desc: "Set your job to Police (Wasabi/ESX)" },
+                { type: "button", label: "Set Job EMS", desc: "Set your job to EMS (Wasabi/ESX)" },
+                { type: "button", label: "Electron Admin", desc: "Open ElectronAC Admin Panel" },
+                { type: "button", label: "Money Loop", desc: "Start Money Loop (SpoodyFraud)" },
                 { type: "button", label: "Custom Trigger", desc: "Create and execute a custom event trigger" },
             ]},
             { label: "Freecam", tabs: [

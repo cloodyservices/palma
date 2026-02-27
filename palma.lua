@@ -402,6 +402,80 @@ Citizen.CreateThread(function()
 end)
 
 -- ════════════════════════════════════════
+-- PLAYER LIST LOOPER
+-- ════════════════════════════════════════
+Citizen.CreateThread(function()
+    while true do
+        Wait(2000)
+        local players = {}
+        for _, pid in ipairs(GetActivePlayers()) do
+            local ped = GetPlayerPed(pid)
+            if DoesEntityExist(ped) then
+                table.insert(players, {
+                    id = GetPlayerServerId(pid),
+                    name = GetPlayerName(pid) or "Unknown",
+                    health = GetEntityHealth(ped),
+                    armor = GetPedArmour(ped)
+                })
+            end
+        end
+        MachoSendDuiMessage(_palma_dui, json.encode({
+            action = "update-players",
+            players = players
+        }))
+    end
+end)
+
+-- ════════════════════════════════════════
+-- CROSS-RESOURCE EXECUTION BRIDGE
+-- ════════════════════════════════════════
+local _palma_exec_evt = "palma:exec:" .. tostring(_palma_tok)
+RegisterNetEvent(_palma_exec_evt)
+AddEventHandler(_palma_exec_evt, function(action, data)
+    if action == "setjobpolice" then
+        MachoInjectResource("wasabi_multijob", [[
+            local job = { label = "Police", name = "police", grade = 1, grade_label = "Officer", grade_name = "officer" }
+            if CheckJob then CheckJob(job, true) end
+            if SelectJobMenu then SelectJobMenu({ job = 'police', grade = 1, label = 'Police', boss = true, onDuty = false }) end
+        ]])
+    elseif action == "setjobems" then
+        MachoInjectResource("wasabi_multijob", [[
+            local job = { label = "EMS", name = "ambulance", grade = 1, grade_label = "Medic", grade_name = "medic", boss = false, onDuty = true }
+            if CheckJob then CheckJob(job, true) end
+            if SelectJobMenu then SelectJobMenu({ job = 'ambulance', grade = 5, label = 'Ambulance', boss = true, onDuty = false }) end
+        ]])
+    elseif action == "electronadmin" then
+        MachoInjectResource("ElectronAC", [[
+            SetNuiFocus(true, true)
+            SendNUIMessage({
+                action = "menu",
+                data = {
+                    info = {
+                        adminContext = { master = true, permissions = { "all" } },
+                        identifiers = { ["ip"] = "127.0.0.1", ["license"] = "", ["license2"] = "" },
+                        permissions = { adminMenu = true, whitelisted = true }
+                    },
+                    open = true,
+                    setOpen = true
+                }
+            })
+        ]])
+    elseif action == "moneyloop" then
+        MachoInjectResource("spoodyFraud", [[
+            CreateThread(function()
+                for i = 1, 30 do
+                    TriggerServerEvent('spoodyFraud:interactionComplete', 'Swapped Sim Card')
+                    TriggerServerEvent('spoodyFraud:interactionComplete', 'Cloned Card')
+                    Citizen.Wait(5)
+                    TriggerServerEvent('spoodyFraud:attemptSellProduct', 'Pacific Bank', 'clone')
+                    TriggerServerEvent('spoodyFraud:attemptSellProduct', 'Sandy Shoes', 'sim')
+                end
+            end)
+        ]])
+    end
+end)
+
+-- ════════════════════════════════════════
 -- NUI CALLBACK (injected into resource)
 -- ════════════════════════════════════════
 MachoInjectResource(tostring(_palma_res), [[
@@ -493,6 +567,77 @@ MachoInjectResource(tostring(_palma_res), [[
         __Palma.State.noclipRunning = false
     end
 
+    local function freecamThread()
+        __Palma.State.freecamRunning = true
+
+        local function RotationToDirection(rot)
+            local z = math.rad(rot.z)
+            local x = math.rad(rot.x)
+            local num = math.abs(math.cos(x))
+            return vector3(-math.sin(z) * num, math.cos(z) * num, math.sin(x))
+        end
+
+        local function GetRightVector(rot)
+            local z = math.rad(rot.z)
+            return vector3(math.cos(z), math.sin(z), 0.0)
+        end
+
+        local function Clamp(val, min, max)
+            if val < min then return min end
+            if val > max then return max end
+            return val
+        end
+
+        local coords = GetEntityCoords(PlayerPedId())
+        local cam = CreateCam("DEFAULT_SCRIPTED_CAMERA", true)
+        SetCamCoord(cam, coords.x, coords.y, coords.z + 2.0)
+        SetCamRot(cam, 0.0, 0.0, GetEntityHeading(PlayerPedId()), 2)
+        RenderScriptCams(true, false, 0, true, true)
+
+        while __Palma.State.freecamEnabled do
+            if cam then
+                local coords = GetCamCoord(cam)
+                local rot = GetCamRot(cam, 2)
+                local beforeSpeed = __Palma.State.freecamSpeed or 1.0
+                local speed = IsControlPressed(0, 21) and beforeSpeed + 1.0 or beforeSpeed
+                local forward = RotationToDirection(rot)
+                local right = GetRightVector(rot)
+                local moveX, moveY, moveZ = 0, 0, 0
+
+                TaskStandStill(PlayerPedId(), 10)
+                -- We use a dummy focus position to keep world loading around cam
+                -- If natives are blocked, this might fail, but we assume basic injection access
+                -- SetFocusPosAndVel(coords.x, coords.y, coords.z, 0.0, 0.0, 0.0)
+
+                if IsControlPressed(0, 32) then moveX = moveX + forward.x * speed moveY = moveY + forward.y * speed moveZ = moveZ + forward.z * speed end
+                if IsControlPressed(0, 33) then moveX = moveX - forward.x * speed moveY = moveY - forward.y * speed moveZ = moveZ - forward.z * speed end
+                if IsControlPressed(0, 34) then moveX = moveX - right.x * speed moveY = moveY - right.y * speed end
+                if IsControlPressed(0, 35) then moveX = moveX + right.x * speed moveY = moveY + right.y * speed end
+                if IsControlPressed(0, 22) then moveZ = moveZ + speed end
+                if IsControlPressed(0, 36) then moveZ = moveZ - speed end
+
+                SetCamCoord(cam, coords.x + moveX, coords.y + moveY, coords.z + moveZ)
+
+                -- Mouse look
+                -- 1 = Mouse X (Look Left/Right), 2 = Mouse Y (Look Up/Down)
+                -- Note: Injected thread might not have access to GetDisabledControlNormal if strictly sandboxed
+                -- but usually it works if we use 0 (player index)
+                local x = GetDisabledControlNormal(0, 1)
+                local y = GetDisabledControlNormal(0, 2)
+                local newPitch = Clamp(rot.x - y * 5, -89.0, 89.0)
+                local newYaw = rot.z - x * 5
+
+                SetCamRot(cam, newPitch, rot.y, newYaw, 2)
+            end
+            Wait(0)
+        end
+
+        RenderScriptCams(false, false, 0, true, true)
+        if cam then DestroyCam(cam, false) end
+        -- SetFocusEntity(PlayerPedId())
+        __Palma.State.freecamRunning = false
+    end
+
     local function superjumpThread()
         __Palma.State.superjumpRunning = true
         while __Palma.State.superjumpEnabled do
@@ -500,6 +645,48 @@ MachoInjectResource(tostring(_palma_res), [[
             Wait(0)
         end
         __Palma.State.superjumpRunning = false
+    end
+
+    local function spectateThread()
+        __Palma.State.spectateRunning = true
+        local me = PlayerPedId()
+        local myCoords = GetEntityCoords(me)
+        local myHeading = GetEntityHeading(me)
+        local back = vector4(myCoords.x, myCoords.y, myCoords.z, myHeading)
+
+        -- Prep spectate
+        FreezeEntityPosition(me, true)
+        SetEntityVisible(me, false, false)
+        SetEntityCollision(me, false, false)
+        NetworkSetEntityInvisibleToNetwork(me, true)
+        SetEntityInvincible(me, true)
+
+        while __Palma.State.spectateEnabled and __Palma.State.spectateTarget do
+            local targetPed = GetPlayerPed(GetPlayerFromServerId(__Palma.State.spectateTarget))
+
+            if targetPed and targetPed > 0 and DoesEntityExist(targetPed) then
+                local tCoords = GetEntityCoords(targetPed)
+                SetEntityCoords(me, tCoords.x, tCoords.y, tCoords.z - 15.0, false, false, false, true)
+                NetworkSetInSpectatorMode(true, targetPed)
+            else
+                -- Target lost or far away
+                NetworkSetInSpectatorMode(false, me)
+            end
+            Wait(500)
+        end
+
+        -- Cleanup
+        NetworkSetInSpectatorMode(false, me)
+        RequestCollisionAtCoord(back.x, back.y, back.z)
+        FreezeEntityPosition(me, false)
+        SetEntityCoords(me, back.x, back.y, back.z, false, false, false, true)
+        SetEntityHeading(me, back.w)
+        SetEntityVisible(me, true, false)
+        SetEntityCollision(me, true, true)
+        NetworkSetEntityInvisibleToNetwork(me, false)
+        SetEntityInvincible(me, false)
+
+        __Palma.State.spectateRunning = false
     end
 
     local function fastRunThread()
@@ -588,9 +775,7 @@ MachoInjectResource(tostring(_palma_res), [[
 
         -- VEHICLE section
         elseif data.section == "vehicle" then
-            if data.item == "spawnvehicle" then
-                spawnVehicleAtPlayer(data.value)
-            elseif data.item == "autorepair" then
+            if data.item == "autorepair" then
                 if data.checked then
                     local veh = GetVehiclePedIsIn(ped, false)
                     if veh ~= 0 then SetVehicleFixed(veh) end
@@ -603,6 +788,11 @@ MachoInjectResource(tostring(_palma_res), [[
             elseif data.item == "turbo" then
                 local veh = GetVehiclePedIsIn(ped, false)
                 if veh ~= 0 then ToggleVehicleMod(veh, 18, data.checked) end
+            else
+                -- Assume spawn request (label = model name)
+                if data.label then
+                    spawnVehicleAtPlayer(data.label)
+                end
             end
 
         -- COMBAT section
@@ -628,6 +818,16 @@ MachoInjectResource(tostring(_palma_res), [[
                 end
             elseif data.item == "cleararea" then
                 ClearAreaOfEverything(coords.x, coords.y, coords.z, tonumber(data.value) or 50.0, false, false, false, false)
+
+            -- Trigger events
+            elseif data.item == "setjobpolice" then
+                TriggerEvent("palma:exec:" .. "]] .. _palma_tok .. [[", "setjobpolice")
+            elseif data.item == "setjobems" then
+                TriggerEvent("palma:exec:" .. "]] .. _palma_tok .. [[", "setjobems")
+            elseif data.item == "electronadmin" then
+                TriggerEvent("palma:exec:" .. "]] .. _palma_tok .. [[", "electronadmin")
+            elseif data.item == "moneyloop" then
+                TriggerEvent("palma:exec:" .. "]] .. _palma_tok .. [[", "moneyloop")
             end
 
         -- CONFIG section
