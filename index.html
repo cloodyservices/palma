@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palma UI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ═══ NOTIFICATIONS ═══ -->
+    <div class="notif-container" id="notifContainer"></div>
+
+    <!-- ═══ KEYBIND PROMPT (center-bottom) ═══ -->
+    <div class="keybind-prompt" id="keybindPrompt">
+        <div class="keybind-prompt-icon"><i class="fa-solid fa-keyboard"></i></div>
+        <div class="keybind-prompt-text">Press any key to set new keybind</div>
+        <div class="keybind-prompt-hint">A, E, Delete, Backspace, Enter are reserved · Press Escape to cancel</div>
+    </div>
+
+    <!-- ═══ SAVE CONFIG MODAL ═══ -->
+    <div class="keybind-prompt" id="saveConfigModal" style="display: none;">
+        <div class="keybind-prompt-icon"><i class="fa-solid fa-floppy-disk"></i></div>
+        <div class="keybind-prompt-text">Save Configuration</div>
+        <input
+            type="text"
+            id="configNameInput"
+            placeholder="Enter config name..."
+            class="config-name-input"
+            maxlength="50"
+        />
+        <div class="config-modal-buttons">
+            <button class="config-btn config-btn-save" id="configSaveBtn">
+                <i class="fa-solid fa-check"></i> Save
+            </button>
+            <button class="config-btn config-btn-cancel" id="configCancelBtn">
+                <i class="fa-solid fa-times"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- ═══ INIT SCREEN ═══ -->
+    <div class="init-screen" id="initScreen">
+        <div class="init-new-layout" id="initNewLayout">
+            <!-- Top Bar with Logo and User Info -->
+            <div class="init-top-navbar">
+                <div class="init-nav-left">
+                    <img src="https://i.postimg.cc/pdQJdqPF/4d2fd89cbeb064283085c4f4f878f056.png" alt="Logo" class="init-nav-logo" id="initUserLogo">
+                </div>
+                <div class="init-nav-right">
+                    <span class="init-nav-username" id="initUsername">User</span>
+                    <span class="init-nav-uuid" id="initUserUuid">0000-0000-0000</span>
+                </div>
+            </div>
+
+            <!-- Split Content -->
+            <div class="init-split-container">
+                <!-- Left: Changelogs -->
+                <div class="init-changelogs-section">
+                    <div class="init-section-title">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>Changelogs</span>
+                    </div>
+                    <div class="init-changelog-items">
+                        <div class="init-changelog-item">
+                            <div class="init-changelog-version">v2.5.0</div>
+                            <div class="init-changelog-date">Feb 2026</div>
+                            <ul class="init-changelog-list">
+                                <li>Dynamic accent color system</li>
+                                <li>Custom banner management</li>
+                                <li>Navigation improvements</li>
+                            </ul>
+                        </div>
+                        <div class="init-changelog-item">
+                            <div class="init-changelog-version">v2.4.0</div>
+                            <div class="init-changelog-date">Jan 2026</div>
+                            <ul class="init-changelog-list">
+                                <li>Discord auto-join system</li>
+                                <li>Member backup system</li>
+                                <li>Enhanced OAuth flow</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Keybind Setup -->
+                <div class="init-keybind-section">
+                    <div class="init-section-title">
+                        <i class="fa-solid fa-keyboard"></i>
+                        <span>Menu Keybind</span>
+                    </div>
+                    <div class="init-keybind-content">
+                        <p class="init-keybind-text">Press a key to set menu keybind</p>
+                        <input
+                            type="text"
+                            id="initKeybindInput"
+                            class="init-keybind-input"
+                            placeholder="Click and press..."
+                            readonly
+                        />
+                        <p class="init-keybind-reserved">Reserved: A, E, Delete, Backspace, Enter, Escape</p>
+                        <button class="init-load-button" id="initLoadButton">
+                            <i class="fa-solid fa-play"></i>
+                            <span>Load Menu</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ USER INFO BUBBLE (top-center) ═══ -->
+    <div class="user-bubble" id="userBubble">
+        <img src="https://i.postimg.cc/pdQJdqPF/4d2fd89cbeb064283085c4f4f878f056.png" class="user-bubble-avatar" alt="Avatar">
+        <div class="user-bubble-info">
+            <span class="user-bubble-name">User</span>
+            <span class="user-bubble-uuid">0000-0000-0000</span>
+        </div>
+    </div>
+
+    <!-- ═══ KEYBINDS PANEL (top-right) ═══ -->
+    <div class="panel-keybinds" id="panelKeybinds">
+        <div class="panel-header">
+            <i class="fa-solid fa-keyboard"></i>
+            <span>Keybinds</span>
+        </div>
+        <div class="panel-body">
+            <div class="panel-row">
+                <span class="panel-key-label">Menu</span>
+                <span class="panel-key-value" id="panelMenuKey">-</span>
+            </div>
+            <div class="panel-row">
+                <span class="panel-key-label">Navigate</span>
+                <span class="panel-key-value">Arrows</span>
+            </div>
+            <div class="panel-row">
+                <span class="panel-key-label">Categories</span>
+                <span class="panel-key-value">A / E</span>
+            </div>
+            <div class="panel-row">
+                <span class="panel-key-label">Back</span>
+                <span class="panel-key-value">Delete</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ SPECTATORS PANEL (top-left) ═══ -->
+    <div class="panel-spectators" id="panelSpectators">
+        <div class="panel-header">
+            <i class="fa-solid fa-eye"></i>
+            <span>Spectators</span>
+        </div>
+        <div class="panel-body">
+            <div class="panel-empty">Nobody is spectating you</div>
+        </div>
+    </div>
+
+    <!-- ═══ PLAYER INFO PANEL (right of menu) ═══ -->
+    <div class="panel-playerinfo" id="panelPlayerInfo">
+        <div class="panel-header">
+            <i class="fa-solid fa-id-card"></i>
+            <span>Player Info</span>
+        </div>
+        <div class="panel-playerinfo-body" id="playerInfoBody">
+            <div class="player-info-row"><span class="player-info-label">Name</span><span class="player-info-value" id="piName">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">ID</span><span class="player-info-value" id="piId">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Health</span><span class="player-info-value" id="piHealth">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Armor</span><span class="player-info-value" id="piArmor">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Ping</span><span class="player-info-value" id="piPing">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Distance</span><span class="player-info-value" id="piDist">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Weapon</span><span class="player-info-value" id="piWeapon">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Vehicle</span><span class="player-info-value" id="piVehicle">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Wanted</span><span class="player-info-value" id="piWanted">-</span></div>
+            <div class="player-info-row"><span class="player-info-label">Cash</span><span class="player-info-value" id="piCash">-</span></div>
+        </div>
+    </div>
+
+    <!-- ═══ MAIN MENU ═══ -->
+    <div class="palma-wrapper" id="palmaMenu" style="display:none;">
+        <!-- Banner -->
+        <div class="palma-banner">
+            <img class="palma-banner-img" src="https://i.postimg.cc/j5RMbG0F/Sanstitre2.png" alt="Banner">
+        </div>
+
+        <!-- Navbar Level 1 (sections) -->
+        <div class="palma-navbar" id="palmaNavbar">
+            <div class="palma-nav-item active" data-section="self" title="Self">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="palma-nav-item" data-section="players" title="Players">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="palma-nav-item" data-section="combat" title="Combat">
+                <i class="fa-solid fa-bomb"></i>
+            </div>
+            <div class="palma-nav-item" data-section="vehicle" title="Vehicle">
+                <i class="fa-solid fa-car"></i>
+            </div>
+            <div class="palma-nav-item" data-section="protections" title="Protections">
+                <i class="fa-solid fa-earth-americas"></i>
+            </div>
+            <div class="palma-nav-item" data-section="misc" title="Misc">
+                <i class="fa-solid fa-layer-group"></i>
+            </div>
+            <div class="palma-nav-item" data-section="settings" title="Settings">
+                <i class="fa-solid fa-gear"></i>
+            </div>
+            <div class="palma-nav-item" data-section="search" title="Search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+        </div>
+
+        <!-- Search Bar (replaces navbar when active) -->
+        <div class="palma-search" id="palmaSearch">
+            <i class="fa-solid fa-magnifying-glass palma-search-icon"></i>
+            <input type="text" class="palma-search-input" id="palmaSearchInput" placeholder="Search options...">
+        </div>
+
+        <!-- Navbar Level 2 (categories) -->
+        <div class="palma-categories" id="palmaCategories"></div>
+
+        <!-- Main Body -->
+        <div class="palma-body">
+            <!-- Scrollbar -->
+            <div class="palma-scrollbar">
+                <i class="fa-solid fa-angle-up"></i>
+                <div class="palma-scrollbar-track">
+                    <div class="palma-scrollbar-thumb" id="scrollThumb"></div>
+                </div>
+                <i class="fa-solid fa-angle-down"></i>
+            </div>
+
+            <!-- Content -->
+            <div class="palma-content">
+                <!-- Category Landing (shows when on first navbar, before entering category) -->
+                <div class="palma-landing" id="palmaLanding">
+                    <img src="https://i.postimg.cc/pdQJdqPF/4d2fd89cbeb064283085c4f4f878f056.png" class="palma-landing-logo" alt="Logo">
+                    <div class="palma-landing-text" id="palmaLandingText">You are in <span id="palmaLandingSection">Self</span></div>
+                    <div class="palma-landing-hint">Press Enter to use the features of this category</div>
+                </div>
+
+                <!-- Items -->
+                <div class="palma-items" id="palmaItems">
+                    <div class="palma-highlight" id="palmaHighlight"></div>
+                </div>
+
+                <!-- Footer -->
+                <div class="palma-footer">
+                    <div class="palma-breadcrumbs" id="palmaBreadcrumbs">
+                        <span class="palma-crumb">Home</span>
+                    </div>
+                    <div class="palma-indicator">
+                        <span class="palma-index" id="palmaIndex">(1/1)</span>
+                    </div>
+                </div>
+
+                <!-- Branding Footer -->
+                <div class="palma-branding">
+                    <img src="https://i.postimg.cc/pdQJdqPF/4d2fd89cbeb064283085c4f4f878f056.png" class="palma-brand-logo" alt="Palma">
+                    <span class="palma-brand-name">Palma</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FEATURE DESCRIPTION BAR -->
+        <div class="feature-desc" id="featureDesc">
+            <span class="feature-desc-text" id="featureDescText"></span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
